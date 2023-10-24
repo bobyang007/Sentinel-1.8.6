@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.dashboard.discovery.AppManagement;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 import com.alibaba.csp.sentinel.dashboard.auth.AuthService.PrivilegeType;
 import com.alibaba.csp.sentinel.dashboard.repository.rule.RuleRepository;
+import com.alibaba.csp.sentinel.dashboard.rule.DynamicRuleProvider;
+import com.alibaba.csp.sentinel.dashboard.rule.DynamicRulePublisher;
 import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 import com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker.CircuitBreakerStrategy;
 import com.alibaba.csp.sentinel.util.StringUtil;
@@ -31,6 +33,7 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.DegradeRuleEntity;
 import com.alibaba.csp.sentinel.dashboard.domain.Result;
 
+import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +65,12 @@ public class DegradeController {
     @Autowired
     private AppManagement appManagement;
 
+    @Autowired
+    private DynamicRuleProvider<List<DegradeRuleEntity>> ruleProvider;
+
+    @Autowired
+    private DynamicRulePublisher<List<DegradeRuleEntity>> rulePublisher;
+
     @GetMapping("/rules.json")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<DegradeRuleEntity>> apiQueryMachineRules(String app, String ip, Integer port) {
@@ -78,6 +87,22 @@ public class DegradeController {
             return Result.ofFail(-1, "given ip does not belong to given app");
         }
         try {
+            List<DegradeRuleEntity> rules = ruleProvider.getRules(app);
+
+            logger.info("app = {}，读取降级规则完成", app);
+            if (rules != null && !rules.isEmpty()) {
+                for (DegradeRuleEntity entity : rules) {
+                    entity.setApp(app);
+                }
+            }
+            rules = repository.saveAll(rules);
+            return Result.ofSuccess(rules);
+        } catch (Throwable throwable) {
+            logger.error("queryApps error:", throwable);
+            return Result.ofThrowable(-1, throwable);
+        }
+        /*
+        try {
             List<DegradeRuleEntity> rules = sentinelApiClient.fetchDegradeRuleOfMachine(app, ip, port);
             rules = repository.saveAll(rules);
             return Result.ofSuccess(rules);
@@ -85,6 +110,7 @@ public class DegradeController {
             logger.error("queryApps error:", throwable);
             return Result.ofThrowable(-1, throwable);
         }
+         */
     }
 
     @PostMapping("/rule")
@@ -169,7 +195,17 @@ public class DegradeController {
 
     private boolean publishRules(String app, String ip, Integer port) {
         List<DegradeRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
+        try {
+            logger.info("app = {}，推送降级规则完成，rules = {}", app, JSONObject.toJSONString(rules));
+            rulePublisher.publish(app, rules);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return sentinelApiClient.setDegradeRuleOfMachine(app, ip, port, rules);
+        /*
+        List<DegradeRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
+        return sentinelApiClient.setDegradeRuleOfMachine(app, ip, port, rules);
+         */
     }
 
     private <R> Result<R> checkEntityInternal(DegradeRuleEntity entity) {
