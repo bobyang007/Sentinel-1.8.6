@@ -73,6 +73,11 @@ public class NacosConfig {
 
     @Bean
     public ConfigService nacosConfigService() throws Exception {
+        System.out.println("server:" + this.address +
+                "   namespace:" + this.namespace +
+                "   clusterName:" + this.clusterName +
+                "   username:" + this.username +
+                "   password:" + this.password);
         Properties properties = new Properties();
         properties.put(PropertyKeyConst.SERVER_ADDR, this.address);
         properties.put(PropertyKeyConst.NAMESPACE, this.namespace);

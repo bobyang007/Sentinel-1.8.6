@@ -19,10 +19,10 @@ public class DegradeRuleNacosPublisher implements DynamicRulePublisher<List<Degr
     @Autowired
     private Converter<List<DegradeRuleEntity>, String> converter;
 
-    @Value("{nacos.groupId}")
+    @Value("${nacos.groupId}")
     private String groupId;
 
-    @Value("{nacos.dataIdPostFix}")
+    @Value("${nacos.dataIdPostFix}")
     private String dataIdPostFix;
 
     @Override
