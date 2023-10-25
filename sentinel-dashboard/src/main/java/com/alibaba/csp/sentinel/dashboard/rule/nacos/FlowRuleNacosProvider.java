@@ -25,6 +25,7 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.nacos.api.config.ConfigService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -39,10 +40,16 @@ public class FlowRuleNacosProvider implements DynamicRuleProvider<List<FlowRuleE
     @Autowired
     private Converter<String, List<FlowRuleEntity>> converter;
 
+    @Value("{nacos.groupId}")
+    private String groupId;
+
+    @Value("{nacos.flowDataIdPostFix}")
+    private String flowDataIdPostFix;
+
     @Override
     public List<FlowRuleEntity> getRules(String appName) throws Exception {
-        String rules = configService.getConfig(appName + NacosConfigUtil.FLOW_DATA_ID_POSTFIX,
-            NacosConfigUtil.GROUP_ID, 3000);
+        String rules = configService.getConfig(appName + this.flowDataIdPostFix,
+            this.groupId, 3000);
         if (StringUtil.isEmpty(rules)) {
             return new ArrayList<>();
         }

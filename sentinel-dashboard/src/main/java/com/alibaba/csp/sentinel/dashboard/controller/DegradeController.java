@@ -37,6 +37,7 @@ import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,9 +67,11 @@ public class DegradeController {
     private AppManagement appManagement;
 
     @Autowired
+    @Qualifier("degradeRuleNacosProvider")
     private DynamicRuleProvider<List<DegradeRuleEntity>> ruleProvider;
 
     @Autowired
+    @Qualifier("degradeRuleNacosPublisher")
     private DynamicRulePublisher<List<DegradeRuleEntity>> rulePublisher;
 
     @GetMapping("/rules.json")
@@ -96,6 +99,7 @@ public class DegradeController {
                 }
             }
             rules = repository.saveAll(rules);
+            logger.info("降级规则数据:{}", JSONObject.toJSONString(rules));
             return Result.ofSuccess(rules);
         } catch (Throwable throwable) {
             logger.error("queryApps error:", throwable);
@@ -199,6 +203,7 @@ public class DegradeController {
             logger.info("app = {}，推送降级规则完成，rules = {}", app, JSONObject.toJSONString(rules));
             rulePublisher.publish(app, rules);
         } catch (Exception e) {
+            logger.error("推送降级规则发生异常:{}", e.getMessage());
             e.printStackTrace();
         }
         return sentinelApiClient.setDegradeRuleOfMachine(app, ip, port, rules);

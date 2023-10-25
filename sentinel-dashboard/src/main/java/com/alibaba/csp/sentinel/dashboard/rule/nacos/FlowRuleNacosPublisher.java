@@ -24,6 +24,7 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.nacos.api.config.ConfigService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -38,13 +39,19 @@ public class FlowRuleNacosPublisher implements DynamicRulePublisher<List<FlowRul
     @Autowired
     private Converter<List<FlowRuleEntity>, String> converter;
 
+    @Value("{nacos.groupId}")
+    private String groupId;
+
+    @Value("{nacos.flowDataIdPostFix}")
+    private String flowDataIdPostFix;
+
     @Override
     public void publish(String app, List<FlowRuleEntity> rules) throws Exception {
         AssertUtil.notEmpty(app, "app name cannot be empty");
         if (rules == null) {
             return;
         }
-        configService.publishConfig(app + NacosConfigUtil.FLOW_DATA_ID_POSTFIX,
-            NacosConfigUtil.GROUP_ID, converter.convert(rules));
+        configService.publishConfig(app + this.flowDataIdPostFix,
+            this.groupId, converter.convert(rules));
     }
 }

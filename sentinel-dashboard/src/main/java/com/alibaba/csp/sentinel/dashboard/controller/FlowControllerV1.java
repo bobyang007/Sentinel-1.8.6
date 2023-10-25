@@ -34,6 +34,7 @@ import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 import com.alibaba.csp.sentinel.dashboard.domain.Result;
 import com.alibaba.csp.sentinel.dashboard.repository.rule.InMemoryRuleRepositoryAdapter;
 
+import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,6 +106,7 @@ public class FlowControllerV1 {
                 }
             }
             rules = repository.saveAll(rules);
+            logger.info("app = {}，规则数据:{}", app, JSONObject.toJSONString(rules));
             return Result.ofSuccess(rules);
 
         } catch (Throwable throwable) {
@@ -309,9 +311,10 @@ public class FlowControllerV1 {
     private CompletableFuture<Void> publishRules(String app, String ip, Integer port) {
         List<FlowRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
         try {
-            logger.info("app={}，推送规则完成", app);
+            logger.info("app={}，推送规则完成，rules = {}", app, JSONObject.toJSONString(rules));
             rulePublisher.publish(app, rules);
         } catch (Exception e) {
+            logger.error("推送规则发生异常:{}", e.getMessage());
             e.printStackTrace();
         }
         return sentinelApiClient.setFlowRuleOfMachineAsync(app, ip, port, rules);
