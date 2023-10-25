@@ -56,6 +56,7 @@ public class FlowRuleNacosProvider implements DynamicRuleProvider<List<FlowRuleE
         String rules = configService.getConfig(appName + this.flowDataIdPostFix,
             this.groupId, 3000);
         if (StringUtil.isEmpty(rules)) {
+            logger.info("读取到空配置信息！");
             return new ArrayList<>();
         }
         return converter.convert(rules);

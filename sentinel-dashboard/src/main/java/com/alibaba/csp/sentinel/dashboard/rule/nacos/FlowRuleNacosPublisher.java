@@ -56,7 +56,9 @@ public class FlowRuleNacosPublisher implements DynamicRulePublisher<List<FlowRul
         if (rules == null) {
             return;
         }
-        configService.publishConfig(app + this.flowDataIdPostFix,
-            this.groupId, converter.convert(rules));
+        if (configService.publishConfig(app + this.flowDataIdPostFix,
+                this.groupId, converter.convert(rules))) {
+            logger.info("配置写入成功！");
+        }
     }
 }
